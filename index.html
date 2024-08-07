@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Chat App</h1>
+      <div class="chat-window">
+        <div class="messages-container">
+          <h2 class="username">Username</h2>
+          <ul id="messages"></ul>
+        </div>
+        <div class="input">
+          <form id="messageForm">
+            <input type="text" id="messageInput" placeholder="Enter message" />
+            <button class="btn" onclick="sendMessage()">Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      const messages = document.getElementById("messages");
+      const messageForm = document.getElementById("messageForm");
+
+      const ws = new WebSocket("ws://localhost:8080");
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket server");
+      };
+
+      ws.onmessage = (event) => {
+        logMessage(event.data);
+      };
+
+      ws.onclose = () => {
+        console.log("Disconnected from WebSocket server");
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      messageForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendMessage();
+      });
+
+      function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const message = input.value;
+
+        if (message) {
+          const messageItem = document.createElement("li");
+          messageItem.classList.add("align-right");
+          messageItem.textContent = message;
+          messages.appendChild(messageItem);
+
+          ws.send(message);
+          input.value = "";
+          console.log(`Sent: ${message}`);
+        }
+      }
+
+      function logMessage(message) {
+        console.log("Received:", message);
+        const messageItem = document.createElement("li");
+        messageItem.classList.add("align-left");
+        messageItem.textContent = message;
+        messages.appendChild(messageItem);
+      }
+    </script>
+  </body>
+</html>
