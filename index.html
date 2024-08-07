@@ -8,10 +8,13 @@
   </head>
   <body>
     <div class="container">
-      <h1>Chat App</h1>
+      <div class="navbar">
+        <h1>Chat App</h1>
+        <span class="username"></span>
+        <button class="btn" onclick="handleChangeName()">Change name</button>
+      </div>
       <div class="chat-window">
         <div class="messages-container">
-          <h2 class="username">Username</h2>
           <ul id="messages"></ul>
         </div>
         <div class="input">
@@ -23,6 +26,25 @@
       </div>
     </div>
     <script>
+      let username = "";
+      const setUsername = () => {
+        if (!username) {
+          username = prompt("Enter your username");
+        }
+
+        document.querySelectorAll(".username").forEach((userEl) => {
+          userEl.textContent = username;
+        });
+      };
+
+      setUsername();
+
+      const handleChangeName = () => {
+        username = prompt("Enter your username");
+        localStorage.setItem("username", username);
+        document.querySelector(".username").textContent = username;
+      };
+
       const messages = document.getElementById("messages");
       const messageForm = document.getElementById("messageForm");
 
@@ -33,7 +55,15 @@
       };
 
       ws.onmessage = (event) => {
-        logMessage(event.data);
+        try {
+          const { type, message, username } = JSON.parse(event.data);
+          console.log(event.data);
+          if (type === "message") {
+            displayReceivedMessage(message, username);
+          }
+        } catch (error) {
+          console.error("Error parsing message:", error);
+        }
       };
 
       ws.onclose = () => {
@@ -50,27 +80,56 @@
       });
 
       function sendMessage() {
+        if (!username) {
+          username = prompt("Please enter a username");
+          setUsername();
+        }
         const input = document.getElementById("messageInput");
         const message = input.value;
 
         if (message) {
-          const messageItem = document.createElement("li");
-          messageItem.classList.add("align-right");
-          messageItem.textContent = message;
-          messages.appendChild(messageItem);
-
-          ws.send(message);
+          displaySentMessage(message, username);
+          ws.send(JSON.stringify({ type: "message", message, username }));
           input.value = "";
           console.log(`Sent: ${message}`);
         }
       }
 
-      function logMessage(message) {
+      function displaySentMessage(message, username) {
+        const messageItem = document.createElement("li");
+        messageItem.classList.add("align-right");
+        const textMessage = document.createElement("p");
+        textMessage.textContent = message;
+        const usernameEl = document.createElement("span");
+        usernameEl.classList.add("username", "message-username-right");
+        usernameEl.textContent = username;
+
+        messageItem.appendChild(textMessage);
+        messageItem.appendChild(usernameEl);
+        messages.appendChild(messageItem);
+
+        scrollToBottom();
+      }
+
+      function displayReceivedMessage(message, username) {
         console.log("Received:", message);
         const messageItem = document.createElement("li");
         messageItem.classList.add("align-left");
-        messageItem.textContent = message;
+        const textMessage = document.createElement("p");
+        textMessage.textContent = message;
+        const usernameEl = document.createElement("span");
+        usernameEl.classList.add("username", "message-username-left");
+        usernameEl.textContent = username;
+
+        messageItem.appendChild(textMessage);
+        messageItem.appendChild(usernameEl);
         messages.appendChild(messageItem);
+
+        scrollToBottom();
+      }
+
+      function scrollToBottom() {
+        messages.scrollTop = messages.scrollHeight;
       }
     </script>
   </body>
